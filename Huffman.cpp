@@ -25,18 +25,23 @@ bool Huffman::mark_is_accurate()
 
 void Huffman::rescale()
 {
+	binary_mark *= 2;
+	binary_jump *= 2;
+	u *= 2;
+	l *= 2;
+	//PRINTL("binjmp", binary_jump)
+
+	binary_mark -= l;
+	u -= l;
+	l -= l; // shift the interval: [u, l] --> [0, u-l]
+}
+
+void Huffman::rescale_as_needed()
+{
 	while(	binary_jump < MIN_JUMP_LENGTH ||
 			u-l < MIN_INTERVAL_LENGTH)
 	{
-		binary_mark *= 2;
-		binary_jump *= 2;
-		u *= 2;
-		l *= 2;
-		//PRINTL("binjmp", binary_jump)
-
-		binary_mark -= l;
-		u -= l;
-		l -= l; // shift the interval: [u, l] --> [0, u-l]
+		rescale();
 	}
 }
 
@@ -56,14 +61,14 @@ string Huffman::refine_binary()
 	while(!mark_is_accurate())
 	{
 		rtrn += split_binary(); // a single halving of detail
-		rescale();
+		rescale_as_needed();
 	}
 	return rtrn;
 }
 
 
 
-void Huffman::update_frequencies(char c)
+void Huffman::update_frequencies(unsigned char c)
 {
 	for(int i = c; i <= 256; i++)
 	{
@@ -71,26 +76,26 @@ void Huffman::update_frequencies(char c)
 	}
 }
 
-void Huffman::refine_interval(char c)
+void Huffman::refine_interval(unsigned char c)
 {
-	int l_count = frequency[c],
-		u_count = frequency[c+1];
+	int l_count = c==0 ? 0 : frequency[c-1],
+		u_count = frequency[c];
 	int total = frequency[255];
+
+	while((u-l) * total < MIN_INTERVAL_LENGTH * (u_count-l_count)) // if length*prob < MIN_INT_LEN
+	{
+		rescale();
+	}
 
 	long long int length = u-l;
 	long long int old_l = l;
 	l = old_l + length * l_count/total;
 	u = old_l + length * u_count/total;
-	// TODO: above might yield l==u, no detail.
-	// so need to write a check whether
-	// should scale up first. and act on it!
-	// NOTE: rescale scales based on present
-	// but need to scale based on future!
 
-	rescale();
+	rescale_as_needed();
 }
 
-string Huffman::eat(char c)
+string Huffman::eat(unsigned char c)
 {
 	refine_interval(c);
 	update_frequencies(c);	// needs to be after, since decoder needs to first process
@@ -107,3 +112,18 @@ string Huffman::eat(char c)
 // {
 //   . . .
 // }
+
+
+
+void Huffman::check()
+{
+	if(	binary_jump <= 0 ||
+		u <= l)
+	{
+		PRINTL("bm", binary_mark);
+		PRINTL("bj", binary_jump);
+		PRINTL("u", u);
+		PRINTL("l", l);
+		char l; cin >> l;
+	}
+}
