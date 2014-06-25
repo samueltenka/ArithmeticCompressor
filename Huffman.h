@@ -22,13 +22,17 @@ private:
 
 	bool mark_is_accurate();
 	void rescale();
+	void rescale_as_needed();
+
 	char split_binary();
 	string refine_binary();
 
-	void update_frequencies(char c);
-	void refine_interval(char c);
+	void update_frequencies(unsigned char c);
+	void refine_interval(unsigned char c);
+	
+	void check();
 public:
 	Huffman();
 
-	string eat(char c);
+	string eat(unsigned char c);
 };
